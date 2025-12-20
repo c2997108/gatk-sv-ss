@@ -51,3 +51,7 @@ ENV PATH="${MELT_DIR}/MELTv${MELT_RELEASE}/:$PATH"
 # Add master script
 COPY run_MELT_${MELT_RELEASE}.sh .
 RUN chmod +x run_MELT_${MELT_RELEASE}.sh
+
+RUN ln -s /opt/bowtie2/bowtie2 /usr/local/bin/
+ADD gatk-4.2.6.1/gatk-package-4.2.6.1-local.jar /opt/
+RUN ln -s /opt/gatk-package-4.2.6.1-local.jar /opt/gatk.jar
