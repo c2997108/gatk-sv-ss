@@ -22,6 +22,7 @@ RUN apt-get -qqy update --fix-missing && \
                  unzip \
                  vcftools \
                  wget \
+                 samtools \
                  zlib1g-dev && \
     wget -q -P /tmp/ https://sourceforge.net/projects/bowtie-bio/files/bowtie2/${BOWTIE2_RELEASE}/bowtie2-${BOWTIE2_RELEASE}-linux-x86_64.zip && \
     cd /tmp/ && unzip -qq bowtie2-${BOWTIE2_RELEASE}-linux-x86_64.zip && \
