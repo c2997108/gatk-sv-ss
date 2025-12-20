@@ -38,6 +38,8 @@ https://melt.igs.umaryland.edu/downloads.php から`MELTv2.2.2.tar.gz`をダウ�
 
 ```
 cd melt
+wget https://github.com/broadinstitute/gatk/releases/download/4.2.6.1/gatk-4.2.6.1.zip
+tar vxf gatk-4.2.6.1.zip
 docker build -t local/melt:2.2.2 .
 docker save -o melt.tar local/melt:2.2.2
 mkdir -p ../images/local
