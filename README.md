@@ -19,6 +19,11 @@
 
 https://melt.igs.umaryland.edu/downloads.php から`MELTv2.2.2.tar.gz`をダウンロードし、meltフォルダーにコピーしておく。
 
+```
+git clone 
+docker build -t local/melt:2.2.2 .
+```
+
 # 実行手順
 
 ## CRAMファイルの作成
