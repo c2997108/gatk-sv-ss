@@ -96,6 +96,7 @@ task SVCluster {
             echo "ERROR: neither vcfs nor vcfs_tar was provided"
             exit 1
         fi
+        cat arguments.txt |awk '{print substr($0, 4)}'|xargs -I{} bash -c 'tabix -f {}'
 
         gatk --java-options "-Xmx${JVM_MAX_MEM}" SVCluster \
             --arguments_file arguments.txt \

@@ -41,7 +41,7 @@ workflow GatherBatchEvidenceMetrics {
       baf_file = merged_BAF,
       samples = samples,
       sv_pipeline_docker = sv_pipeline_docker,
-      runtime_attr_override = select_first([runtime_attr_baf_metrics, {"mem_gb": 30, "disk_gb": 100}])
+      runtime_attr_override = select_first([runtime_attr_baf_metrics, {"mem_gb": 60, "disk_gb": 100}])
   }
   call tu.SRMetrics {
     input:

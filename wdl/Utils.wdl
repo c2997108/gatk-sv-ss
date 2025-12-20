@@ -422,6 +422,7 @@ task ValidatePedFile {
 
     set -euo pipefail
     python /opt/sv-pipeline/scripts/validate_ped.py -p ~{ped_file} -s ~{sample_list}
+    cp ~{ped_file} .
 
   >>>
 

@@ -526,6 +526,10 @@ task RunMELT {
       ~{reference_version}
 
     cat "~{melt_standard_vcf_header}" \
+        <(echo '##INFO=<ID=SR,Number=1,Type=Integer,Description="SR">') \
+        <(echo '##FORMAT=<ID=DP,Number=1,Type=Float,Description="DP">') \
+        <(echo '##FORMAT=<ID=AD,Number=1,Type=Float,Description="AD">') \
+        <(echo '##FILTER=<ID=lc,Description="lc">') \
         <(echo -e "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t~{sample_id}") \
         <(grep -v "^#" SVA.final_comp.vcf) \
         <(grep -v "^#" LINE1.final_comp.vcf) \
@@ -533,6 +537,8 @@ task RunMELT {
       | sed -e "2i##fileDate=$(date +'%Y%m%d')" -e "s/No Difference/No_Difference/" \
       | bcftools sort -Oz - > "~{sample_id}.melt.vcf.gz"
     bcftools index -t "~{sample_id}.melt.vcf.gz"
+
+    rm -f *.bam *.bai *.fq *.disc
 
     df -h
     ls -l

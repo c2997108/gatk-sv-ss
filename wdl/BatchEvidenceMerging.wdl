@@ -195,7 +195,7 @@ task SDtoBAF {
   Float mem_size_gb = java_heap_size_mb / 1024.0 + 2.5
 
   RuntimeAttr default_attr = object {
-    cpu_cores: 2,
+    cpu_cores: 4,
     mem_gb: mem_size_gb,
     disk_gb: disk_size,
     boot_disk_gb: 10,

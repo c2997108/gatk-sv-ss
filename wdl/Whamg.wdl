@@ -292,6 +292,8 @@ task RunWhamgOnCram {
     cd ..
     bcftools index -t "~{sample_id}.wham.vcf.gz"
 
+    rm -f sample.bam sample.bam.bai
+
     df -h
     ls -l
   >>>

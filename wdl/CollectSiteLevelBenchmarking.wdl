@@ -85,6 +85,7 @@ task VcfExternalBenchmarkSingleChrom {
 
     # Copy benchmarking BED files to local directory
     mkdir benchmarks
+    export HOME="$PWD"/home; mkdir -p "$HOME"
     gsutil -m cp ~{benchmark_url}/*.bed.gz benchmarks/
     
     # Run benchmarking script

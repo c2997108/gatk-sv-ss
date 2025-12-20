@@ -1,1 +1,0 @@
-../sv-base-mini/fix_spaces.sh

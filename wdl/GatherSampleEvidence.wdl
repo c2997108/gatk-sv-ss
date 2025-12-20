@@ -368,8 +368,8 @@ task LocalizeReads {
       mv ~{reads_path} $(basename ~{reads_path})
       mv ~{reads_index} $(basename ~{reads_index})
     else
-      cp ~{reads_path} $(basename ~{reads_path})
-      cp ~{reads_index} $(basename ~{reads_index})
+      ln ~{reads_path} $(basename ~{reads_path}) || cp ~{reads_path} $(basename ~{reads_path})
+      ln ~{reads_index} $(basename ~{reads_index}) || cp ~{reads_index} $(basename ~{reads_index})
     fi
   }
   output {
