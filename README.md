@@ -1,6 +1,6 @@
 # GATK-SV SGE & Singularity fork
 
-このリポジトリは[[https://github.com/broadinstitute/gatk-sv|GATK-SV]]をSGEとSingularityを用いユーザー権限で実行できるようにソースコードを修正したリポジトリです。
+このリポジトリは[GATK-SV](https://github.com/broadinstitute/gatk-sv)をSGEとSingularityを用いユーザー権限で実行できるようにソースコードを修正したリポジトリです。
 
 # セットアップ手順
 
