@@ -103,6 +103,7 @@ docker run -d --name cromwell-postgres \
     -v "$PWD"/cromwell-pgdata:/var/lib/postgresql/data \
     -p 5432:5432 postgres:15       
 
+# GATK-SVの解析を実行　サーバーの規模によるが、12コアx30台ほどの規模のクラスターでは100検体で1週間ほどかかる。共有ディスクはオールSSDのNFSを推奨。解析中は読み書きともに常時20Gbps程度で使用される。
 java -Xmx100G -Dconfig.file=cromwell-sge.conf -jar cromwell.jar run -i inputs.json wdl/GATKSVPipelineBatch.wdl -o options.json 2>&1 | tee cromwell.log
 ```
 
