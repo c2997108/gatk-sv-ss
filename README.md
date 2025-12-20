@@ -46,7 +46,7 @@ cd ..
 
 # 実行手順
 
-## CRAMファイル, gVCFファイルの作成
+## 1. CRAMファイル (+ gVCFファイル)の作成
 
 Parabricksを用いた https://github.com/NCGM-genome/WGSpipeline のパイプラインを使ってFASTQファイルからCRAMファイルを作成し、作成されたcram、cram.craiファイルはすべてcramフォルダーにコピーしておく。男女の判定をVCFから行う場合は、gVCFのchrY.vcf.gz, chrY.vcf.gz.tbiファイルをgvcfフォルダーにコピーしておく。コンテナ内実行の関係で、シンボリックリンクには現在対応していないので、コピーもしくはハードリンクを作成すること！（重要）
 
@@ -56,9 +56,9 @@ cp -p /path/to/CRAM/*/CRAM/*cram* cram/
 cp -p /path/to/gVCF/*/VCF/*chrY.vcf.gz* gvcf/
 ```
 
-## サンプルごとに男女を記述する
+## 2. サンプルごとに男女を記述する
 
-### gVCFから判定し設定ファイル(ped)を作成する場合
+### a. gVCFから判定し設定ファイル(ped)を作成する場合
 
 ```
 # SRY遺伝子の平均デプスが2以下なら女性、2より大きければ男性と判定する例
@@ -68,7 +68,7 @@ for i in gvcf/*.chrY.vcf.gz; do
 done | awk -F'\t' '{if($2>2){s=1}else{s=2}; print $1"\t"$1"\t0\t0\t"s"\t0"}' > family.ped
 ```
 
-### サンプルの情報から性別を記述したpedファイルを作成する場合
+### b. サンプルの情報から性別を記述したpedファイルを作成する場合
 
 | サンプル名 | 家族名 | 0 | 0 | ( 男性なら1, 女性なら2) | 0 |
 | --- | --- | --- | --- | --- | --- | 
@@ -77,19 +77,19 @@ done | awk -F'\t' '{if($2>2){s=1}else{s=2}; print $1"\t"$1"\t0\t0\t"s"\t0"}' > f
 
 のタブ区切りテキストを作成し、family.pedを作成。
 
-## cramファイルを記述したjsonファイルを準備する
+## 3. cramファイルを記述したjsonファイルを準備する
 
 ```
 ls cram/*.cram |awk 'FILENAME==ARGV[1]{n=split($0,arr,"/"); sub(/[.]cram$/,"",arr[n]); id[FNR]=arr[n]; file[FNR]=$0; m=FNR} FILENAME==ARGV[2]{if($1=="\"GATKSVPipelineBatch.samples\":"){ORS=""; print "  \"GATKSVPipelineBatch.samples\": [\""id[1]"\""; for(i=2;i<=m;i++){print ",\""id[i]"\""}; ORS="\n"; print "],"}else if($1=="\"GATKSVPipelineBatch.bam_or_cram_files\":"){ORS=""; print "  \"GATKSVPipelineBatch.bam_or_cram_files\": [\""file[1]"\""; for(i=2;i<=m;i++){print ",\""file[i]"\""}; ORS="\n"; print "],"}else{print $0}}' /dev/stdin GATKSVPipelineBatch_podman_2_2024-05-11_100_2.json|sed 's%cramlist-2023-exec.SRYcov.ped%SRYcov.2025-10.ped%' > inputs.json
 ```
 
-## 実行
+## 4. 実行
 
 ```
 java -Xmx100G -Dconfig.file=cromwell-sge.conf -jar cromwell-92-97d07e0-SNAP.jar run -i inputs.json wdl/GATKSVPipelineBatch.wdl -o options.json 2>&1 | tee cromwell.log
 ```
 
-## ノイズ除去
+## 5. ノイズ除去
 
 ```
 cromwell-outputs/batch1.cleaned.vcf.gz
