@@ -21,10 +21,11 @@
 ```
 git clone https://github.com/c2997108/gatk-sv.git
 cd gatk-sv
+sed -i 's%/SSD_ARRAY/gatk-sv_v2024-06-26/tmp%'"$PWD"'%; s%/suikou/tool9-all/bin%'"$(dirname $(which singularity))"'%' cromwell-sge.conf
 
 # singularityのコンテナイメージやGATK-SVの実行に必要なゲノムデータなどをダウンロード
 wget -O gatk-sv-singularity.tar.gz https://zenodo.org/records/17994642/files/gatk-sv-singularity.tar.gz?download=1
-tar vxf gatk-sv-singularity.tar.gz
+tar vxf gatk-sv-singularity.tar.gz 
 
 # singularityの実行用に修正したcromwellファイルをダウンロード。コンテナのイメージ名で起動しても再実行時にキャッシュが効くように、またWDLのwrite_linesを使った場合に作成されるファイルのタイムスタンプを固定することで再実行時にキャッシュが効くように修正している。
 wget -O cromwell.jar https://github.com/c2997108/cromwell/releases/download/92ky/cromwell-92-97d07e0-SNAP.jar
@@ -80,13 +81,34 @@ done | awk -F'\t' '{if($2>2){s=1}else{s=2}; print $1"\t"$1"\t0\t0\t"s"\t0"}' > f
 ## 3. cramファイルを記述したjsonファイルを準備する
 
 ```
-ls cram/*.cram |awk 'FILENAME==ARGV[1]{n=split($0,arr,"/"); sub(/[.]cram$/,"",arr[n]); id[FNR]=arr[n]; file[FNR]=$0; m=FNR} FILENAME==ARGV[2]{if($1=="\"GATKSVPipelineBatch.samples\":"){ORS=""; print "  \"GATKSVPipelineBatch.samples\": [\""id[1]"\""; for(i=2;i<=m;i++){print ",\""id[i]"\""}; ORS="\n"; print "],"}else if($1=="\"GATKSVPipelineBatch.bam_or_cram_files\":"){ORS=""; print "  \"GATKSVPipelineBatch.bam_or_cram_files\": [\""file[1]"\""; for(i=2;i<=m;i++){print ",\""file[i]"\""}; ORS="\n"; print "],"}else{print $0}}' /dev/stdin GATKSVPipelineBatch_podman_2_2024-05-11_100_2.json|sed 's%cramlist-2023-exec.SRYcov.ped%SRYcov.2025-10.ped%' > inputs.json
+ls cram/*.cram |awk '
+ FILENAME==ARGV[1]{n=split($0,arr,"/"); sub(/[.]cram$/,"",arr[n]); id[FNR]=arr[n]; file[FNR]=$0; m=FNR}
+ FILENAME==ARGV[2]{
+  if($1=="\"GATKSVPipelineBatch.samples\":"){ORS=""; print "  \"GATKSVPipelineBatch.samples\": [\""id[1]"\""; for(i=2;i<=m;i++){print ",\""id[i]"\""}; ORS="\n"; print "],"}
+  else if($1=="\"GATKSVPipelineBatch.bam_or_cram_files\":"){ORS=""; print "  \"GATKSVPipelineBatch.bam_or_cram_files\": [\""file[1]"\""; for(i=2;i<=m;i++){print ",\""file[i]"\""}; ORS="\n"; print "],"}
+  else{print $0}
+ }' /dev/stdin inputs-template.json > inputs.json
 ```
 
 ## 4. 実行
 
 ```
-java -Xmx100G -Dconfig.file=cromwell-sge.conf -jar cromwell-92-97d07e0-SNAP.jar run -i inputs.json wdl/GATKSVPipelineBatch.wdl -o options.json 2>&1 | tee cromwell.log
+# やり直す場合に正常終了した部分の結果を再利用できるように進行状況を記録するDBを起動しておく
+mkdir -p cromwell-pgdata
+chmod 777 cromwell-pgdata
+docker run -d --name cromwell-postgres \
+    -e POSTGRES_PASSWORD=cromwellpw \
+    -e POSTGRES_USER=cromwell \
+    -e POSTGRES_DB=cromwell \
+    -v "$PWD"/cromwell-pgdata:/var/lib/postgresql/data \
+    -p 5432:5432 postgres:15       
+
+java -Xmx100G -Dconfig.file=cromwell-sge.conf -jar cromwell.jar run -i inputs.json wdl/GATKSVPipelineBatch.wdl -o options.json 2>&1 | tee cromwell.log
+```
+
+```
+# postgresのdockerを止める場合は
+docker stop cromwell-postgres
 ```
 
 ## 5. ノイズ除去
