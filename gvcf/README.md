@@ -1,1 +1,1 @@
-Add gvcf files of chrY here.
+Add gvcf(.gz) and tbi files of chrY here.
