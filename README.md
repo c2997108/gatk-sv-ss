@@ -15,19 +15,29 @@
 
 ## 必要なファイルのダウンロード
 
+```
+git clone https://github.com/c2997108/gatk-sv.git
+cd gatk-sv
+```
+
 ## MELTコンテナの作成
 
+ライセンスの関係で作者のHPからファイルをダウンロードしてくる必要がある。
 https://melt.igs.umaryland.edu/downloads.php から`MELTv2.2.2.tar.gz`をダウンロードし、meltフォルダーにコピーしておく。
 
 ```
-git clone 
+cd melt
 docker build -t local/melt:2.2.2 .
+docker save -o melt.tar local/melt:2.2.2
+mkdir -p ../images/local
+singularity build ../images/local/melt:2.2.2 docker-archive://melt.tar
+cd ..
 ```
 
 # 実行手順
 
 ## CRAMファイルの作成
 
-Parabricksを用いた https://github.com/NCGM-genome/WGSpipeline のパイプラインを使ってFASTQファイルからCRAMファイルを作成する。
+Parabricksを用いた https://github.com/NCGM-genome/WGSpipeline のパイプラインを使ってFASTQファイルからCRAMファイルを作成し、作成されたcram、cram.craiファイルはすべてcramフォルダーにコピーしておく。コンテナ内実行の関係で、シンボリックリンクには現在対応していないので、コピーもしくはハードリンクを作成すること！（重要）
 
 ## サンプルごとに男女の設定をする
