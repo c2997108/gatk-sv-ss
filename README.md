@@ -46,17 +46,38 @@ cd ..
 
 # 実行手順
 
-## CRAMファイルの作成
+## CRAMファイル, gVCFファイルの作成
 
-Parabricksを用いた https://github.com/NCGM-genome/WGSpipeline のパイプラインを使ってFASTQファイルからCRAMファイルを作成し、作成されたcram、cram.craiファイルはすべてcramフォルダーにコピーしておく。コンテナ内実行の関係で、シンボリックリンクには現在対応していないので、コピーもしくはハードリンクを作成すること！（重要）
-
-## サンプルごとに男女を判定し設定ファイルを作成する
+Parabricksを用いた https://github.com/NCGM-genome/WGSpipeline のパイプラインを使ってFASTQファイルからCRAMファイルを作成し、作成されたcram、cram.craiファイルはすべてcramフォルダーにコピーしておく。男女の判定をVCFから行う場合は、gVCFのchrY.vcf.gz, chrY.vcf.gz.tbiファイルをgvcfフォルダーにコピーしておく。コンテナ内実行の関係で、シンボリックリンクには現在対応していないので、コピーもしくはハードリンクを作成すること！（重要）
 
 ```
-for i in cram4.gvcfY/*.chrY.g.vcf.gz; do j=`echo $i|sed 's/.chrY.g.vcf.gz$//'`; /suikou/tool9/bcftools-1.17/bin/bcftools view $i chrY:2780855-2797682|grep -v "^#"|cut -f 10|cut -f 2 -d:|awk -F, -v name=`basename $j` '{for(i=1;i<=NF;i++){a+=$i}; n++} END{print name"\t"a/n}'; done |sort |awk -F'\t' '{if($2>2){s=1}else{s=2}; print $1"\t"$1"\t0\t0\t"s"\t0"}' > SRYcov.ped
+# コピーコマンドの例：
+cp -p /path/to/CRAM/*/CRAM/*cram* cram/
+cp -p /path/to/gVCF/*/VCF/*chrY.vcf.gz* gvcf/
 ```
 
-## 入力ファイルを記述したjsonファイルを準備する
+## サンプルごとに男女を記述する
+
+### gVCFから判定し設定ファイル(ped)を作成する場合
+
+```
+# SRY遺伝子の平均デプスが2以下なら女性、2より大きければ男性と判定する例
+for i in gvcf/*.chrY.vcf.gz; do
+ sname=`zcat $i|grep -v "^##"|head -n 1|cut -f 10`;
+ docker run -v "$PWD:$PWD" -w "$PWD" -it --rm biocontainers/bcftools:v1.9-1-deb_cv1 bcftools view $i chrY:2780855-2797682|grep -v "^#"|cut -f 10|cut -f 2 -d:|awk -F, -v name="$sname" '{for(i=1;i<=NF;i++){a+=$i}; n++} END{print name"\t"a/n}';
+done | awk -F'\t' '{if($2>2){s=1}else{s=2}; print $1"\t"$1"\t0\t0\t"s"\t0"}' > family.ped
+```
+
+### サンプルの情報から性別を記述したpedファイルを作成する場合
+
+| サンプル名 | 家族名 | 0 | 0 | ( 男性なら1, 女性なら2) | 0 |
+| --- | --- | --- | --- | --- | --- | 
+| male_1 | family_1 | 0 | 0 | 1 | 0 |
+| female_1 | family_1 | 0 | 0 | 2 | 0 |
+
+のタブ区切りテキストを作成し、family.pedを作成。
+
+## cramファイルを記述したjsonファイルを準備する
 
 ```
 ls cram/*.cram |awk 'FILENAME==ARGV[1]{n=split($0,arr,"/"); sub(/[.]cram$/,"",arr[n]); id[FNR]=arr[n]; file[FNR]=$0; m=FNR} FILENAME==ARGV[2]{if($1=="\"GATKSVPipelineBatch.samples\":"){ORS=""; print "  \"GATKSVPipelineBatch.samples\": [\""id[1]"\""; for(i=2;i<=m;i++){print ",\""id[i]"\""}; ORS="\n"; print "],"}else if($1=="\"GATKSVPipelineBatch.bam_or_cram_files\":"){ORS=""; print "  \"GATKSVPipelineBatch.bam_or_cram_files\": [\""file[1]"\""; for(i=2;i<=m;i++){print ",\""file[i]"\""}; ORS="\n"; print "],"}else{print $0}}' /dev/stdin GATKSVPipelineBatch_podman_2_2024-05-11_100_2.json|sed 's%cramlist-2023-exec.SRYcov.ped%SRYcov.2025-10.ped%' > inputs.json
