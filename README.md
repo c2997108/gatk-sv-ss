@@ -1,4 +1,4 @@
-# GATK-SV SGE & Singularity fork
+# GATK-SV fork with SGE & Singularity
 
 このリポジトリは[GATK-SV](https://github.com/broadinstitute/gatk-sv)をSGEとSingularityを用いユーザー権限で実行できるようにソースコードを修正したリポジトリです。オリジナルのバージョンはgatk-sv v2024-06-26です。
 
@@ -8,11 +8,11 @@
 
 下記が必要です
 
-- Linuxサーバー
+- Linuxサーバー（500検体をマージするなら512GBのメモリーのサーバーが必要）
 - SGEがセットアップされていること。私たちはhttps://github.com/daimh/sge でテストしています。
-- dockerがセットアップされていること。
-- singularityコマンドがセットアップされていること。私たちはapptainer version 1.1.9-1.el9でテストしています。
-- java (version 11以降)がセットアップされていること。
+- dockerがセットアップされていること。cromwellを起動するメインサーバーのみでOK。
+- java (version 11以降)がセットアップされていること。cromwellを起動するメインサーバーのみでOK。
+- singularityコマンドがセットアップされていること。全サーバーに必要。私たちはapptainer version 1.1.9-1.el9でテストしています。
 
 作業するフォルダーの空き容量は100検体で20TBほど必要。
 
@@ -21,6 +21,7 @@
 ```
 git clone https://github.com/c2997108/gatk-sv.git
 cd gatk-sv
+# Pathの修正
 sed -i 's%/SSD_ARRAY/gatk-sv_v2024-06-26/tmp%'"$PWD"'%; s%/suikou/tool9-all/bin%'"$(dirname $(which singularity))"'%' cromwell-sge.conf
 
 # singularityのコンテナイメージやGATK-SVの実行に必要なゲノムデータなどをダウンロード
@@ -34,7 +35,7 @@ wget -O cromwell.jar https://github.com/c2997108/cromwell/releases/download/92ky
 ## MELTコンテナの作成
 
 ライセンスの関係で作者のHPからファイルをダウンロードしてくる必要がある。
-https://melt.igs.umaryland.edu/downloads.php から`MELTv2.2.2.tar.gz`をダウンロードし、meltフォルダーにコピーしておく。
+https://melt.igs.umaryland.edu/downloads.php から`MELTv2.2.2.tar.gz`をダウンロードし、meltフォルダーに`MELTv2.2.2.tar.gz`をコピーしておく。
 
 ```
 cd melt
@@ -51,7 +52,7 @@ cd ..
 
 ## 1. CRAMファイル (+ gVCFファイル)の作成
 
-八谷先生らが開発されているParabricksを用いた https://github.com/NCGM-genome/WGSpipeline のパイプラインを使ってFASTQファイルからCRAMファイルを作成する。私たちはGeForce RTX 4060 Ti 16GB 1枚で実行できることを確認した。具体的なデモは下記の通り。
+八谷先生らが開発されているhttps://github.com/NCGM-genome/WGSpipeline (NVIDIA Parabricksを中心としたWGSパイプライン)を使ってFASTQファイルからCRAMファイルを作成する。私たちはGeForce RTX 4060 Ti 16GB 1枚で実行できることを確認した。具体的なデモは下記の通り。
 
 ```
 python -m venv cwlenv
@@ -122,7 +123,7 @@ ls cram/*.cram |awk '
  }' /dev/stdin inputs-template.json > inputs.json
 ```
 
-## 4. 実行
+## 4. GATK-SVの実行
 
 ```
 # やり直す場合に正常終了した部分の結果を再利用できるように進行状況を記録するDBを起動しておく
@@ -135,7 +136,7 @@ docker run -d --name cromwell-postgres \
     -v "$PWD"/cromwell-pgdata:/var/lib/postgresql/data \
     -p 5432:5432 postgres:15       
 
-# GATK-SVの解析を実行　サーバーの規模によるが、12コアx30台ほどの規模のクラスターでは100検体で1週間ほどかかる。共有ディスクはオールSSDのNFSを推奨。解析中は読み書きともに常時20Gbps程度で使用される。
+# GATK-SVの解析を実行　サーバーの規模によるが、12コア 128GB x 30台ほどの規模のクラスターでは100検体で1週間ほどかかる。共有ディスクはオールSSDのNFSを推奨。解析中は読み書きともに常時20Gbps程度で使用される。
 java -Xmx100G -Dconfig.file=cromwell-sge.conf -jar cromwell.jar run -i inputs.json wdl/GATKSVPipelineBatch.wdl -o options.json 2>&1 | tee cromwell.log
 ```
 
@@ -146,12 +147,12 @@ docker stop cromwell-postgres
 
 ## 5. ノイズ除去
 
-私たちが開発している下記のツールを使うと、真のSVを失うことなく擬陽性のSVを半分削除することが可能である。ディープラーニングを使用しており、GeForce RTX 4060 Ti 16GB 1枚で実行できる。
+私たちが開発している下記のツールを使うと、真のSVを失うことなく擬陽性のSVを半分除去することが可能である。ディープラーニングを使用しており、GeForce RTX 4060 Ti 16GB 1枚で実行できる。
 
 https://github.com/Endo2001/EMSVfilter
 
 ```
-# 機械学習を使うまでもなく削除可能なノイズのSVを除去
+# 機械学習を使うまでもなく削除可能なノイズSVを除去
 zcat cromwell-outputs/batch1.cleaned.vcf.gz |grep -v "^##"|awk -F'\t' '
  NR==1{print $0}
  NR>1{
@@ -210,5 +211,6 @@ awk -F'\t' -v ref="$ref" -v gtf="$gtf" '
 # そこまでバージョン依存は厳しくないと思うけど、私たちの使用しているIGVのバージョンを書いておくと、2.19.6
 xvfb-run -a -s "-screen 0 1600x1000x24 -nolisten tcp" /path/to/igv.sh -b run-igv.batch
 
+# EMSVfilterの実行
 docker run -it --rm --gpus all -v "$PWD:$PWD" -w "$PWD" c2997108/emsvfilter:0.1 EMSVfilter.py igv-image > result.txt
 ```
