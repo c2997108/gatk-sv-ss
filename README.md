@@ -147,7 +147,7 @@ docker stop cromwell-postgres
 
 ## 5. ノイズ除去
 
-私たちが開発している下記のツールを使うと、真のSVを失うことなく擬陽性のSVを半分除去することが可能である。ディープラーニングを使用しており、GeForce RTX 4060 Ti 16GB 1枚で実行できる。
+私たちが開発している下記のツールを使うと、真のSVを失うことなく擬陽性のSVを半分除去することが可能である。ディープラーニングを使用しており、GeForce RTX 4060 Ti 16GB 1枚で実行できることを確認した。
 
 https://github.com/Endo2001/EMSVfilter
 
@@ -173,7 +173,7 @@ zcat cromwell-outputs/batch1.cleaned.vcf.gz |grep -v "^##"|awk -F'\t' '
  END{print "Total: "n1"\nFiltered low quality DUP SVs: "n1-n2"\nFiltered very large SVs: "n2-n3"\nFiltered no 0/0 SVs: "n3-n4"\nRemained: "n4 > "/dev/stderr"}
 ' > output.cleaned.tsv
 
-# EMSVfilterを実行するためにIGVで各SVのスクリーンショットを撮る
+# EMSVfilterを実行するためにIGVで各SVのスクリーンショットを撮る。コントロールとして同じ座標で変異の検出されない検体のSVも撮影する。そのためのIDを抽出。
 awk -F'\t' '
  NR==1{for(i=10;i<=NF;i++){name[i]=$i}}
  NR>1{
@@ -186,8 +186,14 @@ awk -F'\t' '
   }
  }' output.cleaned.tsv > check.list
 
-ref=/path/to/hg38.fasta
-gtf=/path/to/Homo_sapiens.GRCh38.84.sorted.gtf
+# IGVでスクリーンショットを撮るためのバッチファイル作成
+# IGVのインストールは必須。bgzip, tabixは遺伝子アノテーションを一緒に表示させたいならば必要。
+# EMSVfilterの学習に使用したIGVのバージョンを一応書いておくと、2.19.6
+ref=/path/to/reference_hg38/Homo_sapiens_assembly38.fasta
+wget https://ftp.ensembl.org/pub/release-84/gtf/homo_sapiens/Homo_sapiens.GRCh38.84.gtf.gz
+zcat Homo_sapiens.GRCh38.84.gtf.gz | LC_ALL=C sort -t$'\t' -k1,1 -k4,4n -k5,5n | bgzip > Homo_sapiens.GRCh38.84.sorted.gtf.gz
+tabix -p gff Homo_sapiens.GRCh38.84.sorted.gtf.gz
+gtf=Homo_sapiens.GRCh38.84.sorted.gtf.gz
 mkdir -p igv-image
 awk -F'\t' -v ref="$ref" -v gtf="$gtf" '
  BEGIN{
@@ -208,8 +214,10 @@ awk -F'\t' -v ref="$ref" -v gtf="$gtf" '
         print "viewaspairs\ncollapse\ngroup reference_concordance"
         print "snapshot igv-image/control_"$1"-"$3"-"$4"-"$5".png"
 }' check.list > run-igv.batch
-# そこまでバージョン依存は厳しくないと思うけど、私たちの使用しているIGVのバージョンを書いておくと、2.19.6
-xvfb-run -a -s "-screen 0 1600x1000x24 -nolisten tcp" /path/to/igv.sh -b run-igv.batch
+## Xなしで実行するなら
+# xvfb-run -a -s "-screen 0 1600x1000x24 -nolisten tcp" /path/to/igv.sh -b run-igv.batch
+## Xありで実行するなら直接実行
+/path/to/igv.sh -b run-igv.batch
 
 # EMSVfilterの実行
 docker run -it --rm --gpus all -v "$PWD:$PWD" -w "$PWD" c2997108/emsvfilter:0.1 EMSVfilter.py igv-image > result.txt
