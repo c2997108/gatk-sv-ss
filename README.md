@@ -51,12 +51,42 @@ cd ..
 
 ## 1. CRAMファイル (+ gVCFファイル)の作成
 
-Parabricksを用いた https://github.com/NCGM-genome/WGSpipeline のパイプラインを使ってFASTQファイルからCRAMファイルを作成し、作成されたcram、cram.craiファイルはすべてcramフォルダーにコピーしておく。男女の判定をVCFから行う場合は、gVCFのchrY.vcf.gz, chrY.vcf.gz.tbiファイルをgvcfフォルダーにコピーしておく。コンテナ内実行の関係で、シンボリックリンクには現在対応していないので、コピーもしくはハードリンクを作成すること！（重要）
+八谷先生らが開発されているParabricksを用いた https://github.com/NCGM-genome/WGSpipeline のパイプラインを使ってFASTQファイルからCRAMファイルを作成する。私たちはGeForce RTX 4060 Ti 16GB 1枚で実行できることを確認した。具体的なデモは下記の通り。
+
+```
+python -m venv cwlenv
+source cwlenv/bin/activate
+python -m pip install --upgrade pip
+pip install cwltool
+git clone https://github.com/NCGM-genome/WGSpipeline.git
+OUTDIR=reference_hg38 ; mkdir -p $OUTDIR ; for url in `cat WGSpipeline/download_links/reference_hg38.download_links.txt` ; do echo $url ; file=`basename $url` ; if [ ! -f ${OUTDIR}/$file ] ; then wget $url -O ${OUTDIR}/$file ; fi ; done
+
+#テストデータとして1000ゲノムのシーケンスデータを使う場合は下記のコマンドでダウンロード。
+OUTDIR=wgs_fastq ; mkdir -p $OUTDIR ; for url in `cat WGSpipeline/download_links/wgs_fastq_NA12878_20k.download_links.txt` ; do echo $url ; file=`basename $url` ; if [ ! -f ${OUTDIR}/$file ] ; then wget $url -O ${OUTDIR}/$file ; fi ; done
+
+mkdir -p tutorial_01
+cwltool --singularity \
+    --enable-ext \
+    --outdir tutorial_01 \
+    WGSpipeline/Workflows/germline-gpu.cwl \
+    --ref reference_hg38/Homo_sapiens_assembly38.fasta \
+    --fq1 wgs_fastq/H06HDADXX130110.1.ATCACGAT.20k_reads_1.fastq \
+    --fq2 wgs_fastq/H06HDADXX130110.1.ATCACGAT.20k_reads_2.fastq \
+    --rg "@RG\\tID:NA12878.H06HDADXX130110.1\\tPL:ILLUMINA\\tPU:H06HDADXX130110.1\\tLB:H06HDADXX130110.1\\tSM:NA12878" \
+    --num_gpus 1 \
+    --prefix NA12878.H06HDADXX130110.1 \
+    --autosome_interval WGSpipeline/interval_files/autosome.bed \
+    --PAR_interval WGSpipeline/interval_files/PAR.bed \
+    --chrX_interval WGSpipeline/interval_files/chrX.bed \
+    --chrY_interval WGSpipeline/interval_files/chrY.bed
+```
+
+作成されたcram、cram.craiファイルはすべてcramフォルダーにコピーしておく。男女の判定をVCFから行う場合は、gVCFのchrY.vcf.gz, chrY.vcf.gz.tbiファイルをgvcfフォルダーにコピーしておく。基本的に今回紹介するツールはいずれもコンテナ内で実行するため、シンボリックリンクで動作させるにはディレクトリのバインドについて知っておく必要があり、わからない場合はコピーもしくはハードリンクを作成すること！（重要）
 
 ```
 # コピーコマンドの例：
-cp -p /path/to/CRAM/*/CRAM/*cram* cram/
-cp -p /path/to/gVCF/*/VCF/*chrY.vcf.gz* gvcf/
+cp -p tutorial_01/*.cram* cram/
+cp -p tutorial_01/*.chrY.g.vcf.gz* gvcf/
 ```
 
 ## 2. サンプルごとに男女を記述する
@@ -65,7 +95,7 @@ cp -p /path/to/gVCF/*/VCF/*chrY.vcf.gz* gvcf/
 
 ```
 # SRY遺伝子の平均デプスが2以下なら女性、2より大きければ男性と判定する例
-for i in gvcf/*.chrY.vcf.gz; do
+for i in gvcf/*.chrY.g.vcf.gz; do
  sname=`zcat $i|grep -v "^##"|head -n 1|cut -f 10`;
  docker run -v "$PWD:$PWD" -w "$PWD" -it --rm biocontainers/bcftools:v1.9-1-deb_cv1 bcftools view $i chrY:2780855-2797682|grep -v "^#"|cut -f 10|cut -f 2 -d:|awk -F, -v name="$sname" '{for(i=1;i<=NF;i++){a+=$i}; n++} END{print name"\t"a/n}';
 done | awk -F'\t' '{if($2>2){s=1}else{s=2}; print $1"\t"$1"\t0\t0\t"s"\t0"}' > family.ped
@@ -78,7 +108,7 @@ done | awk -F'\t' '{if($2>2){s=1}else{s=2}; print $1"\t"$1"\t0\t0\t"s"\t0"}' > f
 | male_1 | family_1 | 0 | 0 | 1 | 0 |
 | female_1 | family_1 | 0 | 0 | 2 | 0 |
 
-のタブ区切りテキストを作成し、family.pedを作成。
+のようなタブ区切りテキストを1行1サンプルで記述したfamily.pedを作成。
 
 ## 3. cramファイルを記述したjsonファイルを準備する
 
@@ -116,9 +146,12 @@ docker stop cromwell-postgres
 
 ## 5. ノイズ除去
 
+私たちが開発している下記のツールを使うと、真のSVを失うことなく擬陽性のSVを半分削除することが可能である。ディープラーニングを使用しており、GeForce RTX 4060 Ti 16GB 1枚で実行できる。
+
 https://github.com/Endo2001/EMSVfilter
 
 ```
+# 機械学習を使うまでもなく削除可能なノイズのSVを除去
 zcat cromwell-outputs/batch1.cleaned.vcf.gz |grep -v "^##"|awk -F'\t' '
  NR==1{print $0}
  NR>1{
@@ -139,6 +172,7 @@ zcat cromwell-outputs/batch1.cleaned.vcf.gz |grep -v "^##"|awk -F'\t' '
  END{print "Total: "n1"\nFiltered low quality DUP SVs: "n1-n2"\nFiltered very large SVs: "n2-n3"\nFiltered no 0/0 SVs: "n3-n4"\nRemained: "n4 > "/dev/stderr"}
 ' > output.cleaned.tsv
 
+# EMSVfilterを実行するためにIGVで各SVのスクリーンショットを撮る
 awk -F'\t' '
  NR==1{for(i=10;i<=NF;i++){name[i]=$i}}
  NR>1{
@@ -173,8 +207,8 @@ awk -F'\t' -v ref="$ref" -v gtf="$gtf" '
         print "viewaspairs\ncollapse\ngroup reference_concordance"
         print "snapshot igv-image/control_"$1"-"$3"-"$4"-"$5".png"
 }' check.list > run-igv.batch
+# そこまでバージョン依存は厳しくないと思うけど、私たちの使用しているIGVのバージョンを書いておくと、2.19.6
 xvfb-run -a -s "-screen 0 1600x1000x24 -nolisten tcp" /path/to/igv.sh -b run-igv.batch
 
 docker run -it --rm --gpus all -v "$PWD:$PWD" -w "$PWD" c2997108/emsvfilter:0.1 EMSVfilter.py igv-image > result.txt
-
 ```
