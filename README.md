@@ -136,7 +136,8 @@ zcat cromwell-outputs/batch1.cleaned.vcf.gz |grep -v "^##"|awk -F'\t' '
    }
   }
  }
- END{print "Total: "n1"\nFiltered low quality DUP SVs: "n1-n2"\nFiltered very large SVs: "n2-n3"\nFiltered no 0/0 SVs: "n3-n4"\nRemained: "n4 > "/dev/stderr"}' > output.cleaned.tsv
+ END{print "Total: "n1"\nFiltered low quality DUP SVs: "n1-n2"\nFiltered very large SVs: "n2-n3"\nFiltered no 0/0 SVs: "n3-n4"\nRemained: "n4 > "/dev/stderr"}
+' > output.cleaned.tsv
 
 awk -F'\t' '
  NR==1{for(i=10;i<=NF;i++){name[i]=$i}}
@@ -174,5 +175,7 @@ awk -F'\t' -v ref="$ref" -v gtf="$gtf" '
 }' check.list > run-igv.batch
 xvfb-run -a -s "-screen 0 1600x1000x24 -nolisten tcp" /path/to/igv.sh -b run-igv.batch
 
+source /ddca2/wgs-work/tool/endocodex/venv/bin/activate
+python3 /ddca2/wgs-work/tool/endocodex/run_dml_folder_infer2.py image2 > image2.sn.txt
 
 ```
