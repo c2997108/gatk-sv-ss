@@ -175,7 +175,6 @@ awk -F'\t' -v ref="$ref" -v gtf="$gtf" '
 }' check.list > run-igv.batch
 xvfb-run -a -s "-screen 0 1600x1000x24 -nolisten tcp" /path/to/igv.sh -b run-igv.batch
 
-source /ddca2/wgs-work/tool/endocodex/venv/bin/activate
-python3 /ddca2/wgs-work/tool/endocodex/run_dml_folder_infer2.py image2 > image2.sn.txt
+docker run -it --rm --gpus all -v "$PWD:$PWD" -w "$PWD" c2997108/emsvfilter:0.1 EMSVfilter.py igv-image > result.txt
 
 ```
