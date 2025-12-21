@@ -119,59 +119,60 @@ docker stop cromwell-postgres
 https://github.com/Endo2001/EMSVfilter
 
 ```
-cromwell-outputs/batch1.cleaned.vcf.gz
-
-
-for i in resultall6/snp-sv.*.sort2.txt.filtered.txt; do
- a=`tail -n+6 $i|awk -F'\t' 'NR==1||($4!="SV_end"&&$4!="")'|awk -F'\t' 'NR==1||!($6=="<DUP>"&&$0~"ALGORITHMS=depth;EVIDENCE=RD\t")'`;
- if [ `echo "$a"|wc -l` != 1 ]; then
-  echo "$a"|awk -F'\t' '
-   BEGIN{
-    print "new"
-    print "genome /ddca2/original/2021-11-17-WGS2/hdd1/Homo_sapiens_assembly38.fasta"
-    print "load /suikou/db/genome/GRCh38/Homo_sapiens.GRCh38.84.sorted.gtf"
-   }
-   FILENAME==ARGV[1]{fam[$1]=$6; id[$1]=$7; if($3=="患者"){ispat[$1]="patient"}else{ispat[$1]="normal"}}
-   FILENAME==ARGV[2]{
-    if(FNR==1){for(i=1;i<=NF;i++){if($i=="FORMAT"){s=i+1}else if($i=="SV_type"){t=i}; name[i]=$i; name2index[$i]=i}}
-    else if(NR>1){
-     if($4-$3>10*1000*1000){next} #10Mbp以上のSVはスキップ
-       url=$1; gsub("http://localhost:60151/load.file=","",url); #$1=http://localhost:60151/load?file=T:/cram/DC0000090654.cram,T:/cram/DC0000090670.cram&genome=hg38&locus=chr1:25643125-25644125
-       split(url, arr0, "&genome=hg38&locus="); split(arr0[1],arr,","); #arr0[1]=T:/cram/DC0000090654.cram,T:/cram/DC0000090670.cram
-       split(arr0[2],x0,":"); split(x0[2],x1,"-");x1size=x1[2]-x1[1]; #arr0[2]=chr1:25643125-25644125, x0[1]=chr1
-       x1[1]=int(x1[1]-x1size*0.1)
-       if(x1[1]<1){x1[1]=1}
-       x1[2]=int(x1[2]+x1size*0.1)
-     for(i=s;i<=NF;i++){ #患者家系以外で正常検体を見つける
-      if($i!=""&&substr($i,1,1)==0&&substr($i,3,1)==0){
-       for(j in arr){ #arr[1]=T:/cram/DC0000090654.cram, arr[2]=T:/cram/DC0000090670.cram
-        split(arr[j],arr2,"/"); split(arr2[length(arr2)],arr3,"."); #arr3[1]=DC0000090654
-        item=$name2index[arr3[1]]
-        g1=substr(item,1,1)
-        g2=substr(item,3,1)
-        gsub("T:/cram/","",arr[j]) #arr[j]=DC0000090654.cram
-        print "new"
-        print "goto "x0[1]":"x1[1]"-"x1[2]
-        print "load /suikou/db/genome/GRCh38/Homo_sapiens.GRCh38.84.sorted.gtf"
-        print "load cram/"arr[j]
-        print "viewaspairs\ncollapse\ngroup reference_concordance"
-        print "snapshot image2/sample_"x0[1]"_"$3"_"$4"__"$t"__"fam[arr3[1]]"__"ispat[arr3[1]]"__"g1"-"g2"__"id[arr3[1]]"__"arr3[1]".png"
-        #print "remove "arr[j]
-        print "new"
-        print "goto "x0[1]":"x1[1]"-"x1[2]
-        print "load /suikou/db/genome/GRCh38/Homo_sapiens.GRCh38.84.sorted.gtf"
-        print "load cram/"name[i]".cram"
-        print "viewaspairs\ncollapse\ngroup reference_concordance"
-        print "snapshot image2/control_"x0[1]"_"$3"_"$4"__"$t"__"fam[arr3[1]]"__"ispat[arr3[1]]"__"g1"-"g2"__"id[arr3[1]]"__"arr3[1]".png"
-        #print "remove "name[i]".cram"
-       }
-       break
-      }
-     }
+zcat cromwell-outputs/batch1.cleaned.vcf.gz |grep -v "^##"|awk -F'\t' '
+ NR==1{print $0}
+ NR>1{
+  n1++
+  if(!($5=="<DUP>"&&$8~"ALGORITHMS=depth;EVIDENCE=RD$")){ #DUP変異でデプスだけでコールされている変異はほぼノイズなので除去
+   n2++
+   split($8,arr,";"); e=substr(arr[1],5); s=$2; s2=s-500; e2=e+500; l=e2-s2; s3=s2-l*0.1; e3=e2+l*0.1; if(s3<=0){s3=1};
+   if(e3-s3<10*1000*1000){ #10Mbを超える変異はほぼノイズなので除去
+    n3++
+    cont=0; for(i=10;i<=NF;i++){split($i,arr2,":"); split(arr2[1],arr3,"/"); if(arr3[2]=="0"){cont=i; break}}
+    if(cont!=0){ #全検体中で0/0が呼び出されていない変異はノイズか、全員が持っている頻度の高い変異なので除去
+     n4++
+     print $0
     }
    }
-   END{print "exit"}' <(cat kanja.txt|sed 's/\r//'|awk -F'\t' '{OFS="\t"; gsub(/ $/,"",$6); gsub(/[^a-zA-Z0-9._=-]/,"_",$6); gsub(/ $/,"",$7); gsub(/[^a-zA-Z0-9._=-]/,"_",$7); print $0}') /dev/stdin > run2.batch;
- xvfb-run -a -s "-screen 0 1600x1000x24 -nolisten tcp" /suikou/download9/IGV_Linux_2.19.6/igv.sh -b run2.batch
- fi;
-done;
+  }
+ }
+ END{print "Total: "n1"\nFiltered low quality DUP SVs: "n1-n2"\nFiltered very large SVs: "n2-n3"\nFiltered no 0/0 SVs: "n3-n4"\nRemained: "n4 > "/dev/stderr"}' > output.cleaned.tsv
+
+awk -F'\t' '
+ NR==1{for(i=10;i<=NF;i++){name[i]=$i}}
+ NR>1{
+  split($8,arr,";"); e=substr(arr[1],5); s=$2; s2=s-500; e2=e+500; l=e2-s2; s3=s2-l*0.1; e3=e2+l*0.1; if(s3<=0){s3=1};
+  if(e3-s3<10*1000*1000){
+   cont=0; for(i=10;i<=NF;i++){split($i,arr2,":"); split(arr2[1],arr3,"/"); if(arr3[2]=="0"){cont=i; break}};
+   if(cont!=0){
+    for(i=10;i<=NF;i++){split($i,arr2,":"); split(arr2[1],arr3,"/"); if(arr3[2]=="1"){printf "%s-%s-%s\t%s\t%d\t%d\t%s\t%s\n", $1,$2,$3,$1,s3,e3,name[i],name[cont]}}
+   }
+  }
+ }' output.cleaned.tsv > check.list
+
+ref=/path/to/hg38.fasta
+gtf=/path/to/Homo_sapiens.GRCh38.84.sorted.gtf
+mkdir -p igv-image
+awk -F'\t' -v ref="$ref" -v gtf="$gtf" '
+ BEGIN{
+    print "new"
+    print "genome "ref
+ }
+ {
+        print "new"
+        print "goto "$2":"$3"-"$4
+        print "load "gtf
+        print "load cram/"$5".cram"
+        print "viewaspairs\ncollapse\ngroup reference_concordance"
+        print "snapshot igv-image/sample_"$1"-"$3"-"$4"-"$5".png"
+        print "new"
+        print "goto "$2":"$3"-"$4
+        print "load "gtf
+        print "load cram/"$6".cram"
+        print "viewaspairs\ncollapse\ngroup reference_concordance"
+        print "snapshot igv-image/control_"$1"-"$3"-"$4"-"$5".png"
+}' check.list > run-igv.batch
+xvfb-run -a -s "-screen 0 1600x1000x24 -nolisten tcp" /path/to/igv.sh -b run-igv.batch
+
+
 ```
