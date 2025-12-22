@@ -1,4 +1,4 @@
-[日本語版 (Japanese)](https://github.com/c2997108/gatk-sv/blob/master/README_jp.md)
+[日本語版 (Japanese)](https://github.com/c2997108/gatk-sv-ss/blob/master/README_jp.md)
 
 ---
 
