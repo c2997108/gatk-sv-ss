@@ -19,8 +19,8 @@
 ## 必要なファイルのダウンロード
 
 ```
-git clone https://github.com/c2997108/gatk-sv.git
-cd gatk-sv
+git clone https://github.com/c2997108/gatk-sv-ss.git
+cd gatk-sv-ss
 # Pathの修正
 sed -i 's%/SSD_ARRAY/gatk-sv_v2024-06-26/tmp%'"$PWD"'%; s%/suikou/tool9-all/bin%'"$(dirname $(which singularity))"'%' cromwell-sge.conf
 
