@@ -212,7 +212,7 @@ awk -F'\t' '
 
 # Create a batch file for taking screenshots in IGV
 # Installing IGV is required. bgzip and tabix are required if you want to display gene annotations together.
-# For reference, the IGV version used to train EMSVfilter was 2.19.6.
+# For reference, the IGV version used to train EMSVfilter was 2.16.2.
 ref=/path/to/reference_hg38/Homo_sapiens_assembly38.fasta
 wget https://ftp.ensembl.org/pub/release-84/gtf/homo_sapiens/Homo_sapiens.GRCh38.84.gtf.gz
 zcat Homo_sapiens.GRCh38.84.gtf.gz | LC_ALL=C sort -t$'\t' -k1,1 -k4,4n -k5,5n | bgzip > Homo_sapiens.GRCh38.84.sorted.gtf.gz
