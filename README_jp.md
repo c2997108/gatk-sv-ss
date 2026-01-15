@@ -189,6 +189,8 @@ awk -F'\t' '
 # IGVでスクリーンショットを撮るためのバッチファイル作成
 # IGVのインストールは必須。bgzip, tabixは遺伝子アノテーションを一緒に表示させたいならば必要。
 # EMSVfilterの学習に使用したIGVのバージョンを一応書いておくと、2.16.2
+# IGVのView -> Preferences -> Alignmentsで、あらかじめVisibility range threshold (kb): 300000にし、
+# Filter duplicate reads, Filter vendor failed reads, Filter secondary alignments, Show soft-clipped basesのチェックを入れておくこと。
 ref=/path/to/reference_hg38/Homo_sapiens_assembly38.fasta
 wget https://ftp.ensembl.org/pub/release-84/gtf/homo_sapiens/Homo_sapiens.GRCh38.84.gtf.gz
 zcat Homo_sapiens.GRCh38.84.gtf.gz | LC_ALL=C sort -t$'\t' -k1,1 -k4,4n -k5,5n | bgzip > Homo_sapiens.GRCh38.84.sorted.gtf.gz
