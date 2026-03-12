@@ -50,7 +50,7 @@ singularity build ../images/local/melt:2.2.2 docker-archive://melt.tar
 cd ..
 ```
 
-Docker が使えない環境では、`melt/Apptainer.melt.def` を起点に Apptainer で直接イメージを作成できる。DDBJ で確認した手順は `README_ddbj_slurm.md` を参照。
+Docker が使えない環境では、`melt/Apptainer.melt.def` を起点に Apptainer で直接イメージを作成できる。DDBJ で確認した手順は [README_ddbj_slurm.md](README_ddbj_slurm.md) を参照。
 DDBJ スパコンでは `build-melt-image-ddbj.sh` を使うと、Docker なしの確認済み手順をそのまま実行できる。
 
 # 実行手順
