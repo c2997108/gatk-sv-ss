@@ -26,8 +26,9 @@ Download `MELTv2.2.2.tar.gz` from https://melt.igs.umaryland.edu/downloads.php. 
 
 The script downloads GATK 4.2.6.1 if needed, builds a temporary sandbox from `docker://c2997108/gatk-sv:melt-pre`, adds MELT, and writes `images/local/melt:2.2.2`.
 
-## 3. Prepare the 50-sample 1000 Genomes test batch
+## 3. Prepare the CRAM files
 
+### 50-sample 1000 Genomes test batch
 The sample list is fixed in `samples-ddbj-1000g-hg38-50.txt`.
 `prepare-ddbj-test-inputs.sh` creates:
 
@@ -39,7 +40,8 @@ The sample list is fixed in `samples-ddbj-1000g-hg38-50.txt`.
 ./prepare-ddbj-test-inputs.sh
 ```
 
-If you analyze your own CRAM files, please correctly specify the sex of each individual in the fifth column of `family.ped` (1 = male; 2 = female; other = unknown), list the sample IDs in `"GATKSVPipelineBatch.samples"`, provide the absolute paths to the CRAM files in `"GATKSVPipelineBatch.bam_or_cram_files"`, and provide the absolute paths to the corresponding CRAM index files in `"GATKSVPipelineBatch.bam_or_cram_indexes"`.
+### Production CRAM files
+If you analyze your own CRAM files, please correctly specify the sex of each individual in the fifth column of `family.ped` (1 = male; 2 = female; other = unknown) after the above command. List the sample IDs in `"GATKSVPipelineBatch.samples"` of `inputs.json`, provide the absolute paths to the CRAM files in `"GATKSVPipelineBatch.bam_or_cram_files"`, and provide the absolute paths to the corresponding CRAM index files in `"GATKSVPipelineBatch.bam_or_cram_indexes"`.
 
 ## 4. Run on SLURM
 
