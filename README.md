@@ -7,6 +7,8 @@
 This repository is a modified version of [GATK-SV](https://github.com/broadinstitute/gatk-sv) that can be executed with user privileges using SGE and Singularity.
 The original version is gatk-sv v2024-06-26.
 
+For DDBJ / SLURM usage, see [README_ddbj_slurm.md](README_ddbj_slurm.md).
+
 # Setup Instructions
 
 ## Prerequisites
@@ -49,13 +51,16 @@ and copy it into the `melt` directory.
 ```bash
 cd melt
 wget https://github.com/broadinstitute/gatk/releases/download/4.2.6.1/gatk-4.2.6.1.zip
-tar vxf gatk-4.2.6.1.zip
+unzip -oq gatk-4.2.6.1.zip
 docker build -t local/melt:2.2.2 .
 docker save -o melt.tar local/melt:2.2.2
 mkdir -p ../images/local
 singularity build ../images/local/melt:2.2.2 docker-archive://melt.tar
 cd ..
 ```
+
+On environments where Docker is unavailable, `melt/Apptainer.melt.def` can be used as a starting point for an Apptainer-native build. On DDBJ, see `README_ddbj_slurm.md` for the tested sandbox-to-SIF workflow.
+For the DDBJ supercomputer specifically, `build-melt-image-ddbj.sh` automates the tested non-Docker build.
 
 # Execution Procedure
 

@@ -2,6 +2,8 @@
 
 このリポジトリは[GATK-SV](https://github.com/broadinstitute/gatk-sv)をSGEとSingularityを用いユーザー権限で実行できるようにソースコードを修正したリポジトリです。オリジナルのバージョンはgatk-sv v2024-06-26です。
 
+DDBJ / SLURM での実行は [README_ddbj_slurm.md](README_ddbj_slurm.md) を参照してください。
+
 # セットアップ手順
 
 ## 前提として
@@ -40,13 +42,16 @@ https://melt.igs.umaryland.edu/downloads.php から`MELTv2.2.2.tar.gz`をダウ�
 ```
 cd melt
 wget https://github.com/broadinstitute/gatk/releases/download/4.2.6.1/gatk-4.2.6.1.zip
-tar vxf gatk-4.2.6.1.zip
+unzip -oq gatk-4.2.6.1.zip
 docker build -t local/melt:2.2.2 .
 docker save -o melt.tar local/melt:2.2.2
 mkdir -p ../images/local
 singularity build ../images/local/melt:2.2.2 docker-archive://melt.tar
 cd ..
 ```
+
+Docker が使えない環境では、`melt/Apptainer.melt.def` を起点に Apptainer で直接イメージを作成できる。DDBJ で確認した手順は `README_ddbj_slurm.md` を参照。
+DDBJ スパコンでは `build-melt-image-ddbj.sh` を使うと、Docker なしの確認済み手順をそのまま実行できる。
 
 # 実行手順
 

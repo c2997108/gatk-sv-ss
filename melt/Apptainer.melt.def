@@ -1,0 +1,71 @@
+Bootstrap: docker
+From: ubuntu:18.04
+
+%files
+    MELTv2.2.2.tar.gz /tmp/MELTv2.2.2.tar.gz
+    run_MELT_2.2.2.sh /tmp/run_MELT_2.2.2.sh
+    gatk-4.2.6.1/gatk-package-4.2.6.1-local.jar /opt/gatk-package-4.2.6.1-local.jar
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+    export JAVA_VERSION=8
+    export BOWTIE2_RELEASE=2.3.4.3
+    export BOWTIE2_DIR=/opt/bowtie2
+
+    apt-get -qqy update --fix-missing
+    apt-get -qqy dist-upgrade
+    apt-get -qqy install --no-install-recommends \
+        bcftools \
+        bzip2 \
+        ca-certificates \
+        libbz2-dev \
+        liblzma-dev \
+        libncurses5-dev \
+        libtbb-dev \
+        libz-dev \
+        openjdk-${JAVA_VERSION}-jre-headless \
+        tabix \
+        unzip \
+        vcftools \
+        wget \
+        samtools \
+        zlib1g-dev
+
+    wget -q -P /tmp/ https://sourceforge.net/projects/bowtie-bio/files/bowtie2/${BOWTIE2_RELEASE}/bowtie2-${BOWTIE2_RELEASE}-linux-x86_64.zip
+    cd /tmp
+    unzip -qq bowtie2-${BOWTIE2_RELEASE}-linux-x86_64.zip
+    mkdir -p ${BOWTIE2_DIR}
+    mv bowtie2-${BOWTIE2_RELEASE}-linux-x86_64/* ${BOWTIE2_DIR}
+
+    mkdir -p /MELT
+    cd /MELT
+    tar -xzf /tmp/MELTv2.2.2.tar.gz
+
+    chmod +x /tmp/run_MELT_2.2.2.sh
+    mv /tmp/run_MELT_2.2.2.sh /MELT/run_MELT_2.2.2.sh
+
+    ln -sf /opt/bowtie2/bowtie2 /usr/local/bin/bowtie2
+    ln -sf /opt/gatk-package-4.2.6.1-local.jar /opt/gatk.jar
+
+    apt-get -qqy remove wget unzip
+    apt-get -qqy autoremove --purge
+    apt-get -qqy clean
+    rm -rf /tmp/* \
+        /var/tmp/* \
+        /var/cache/apt/* \
+        /var/lib/apt/lists/* \
+        /usr/share/man/?? \
+        /usr/share/man/??_*
+
+%environment
+    export PATH="/MELT/MELTv2.2.2:/opt/bowtie2:${PATH}"
+
+%labels
+    Author kyoshita
+    Tool MELT
+    Version 2.2.2
+
+%test
+    test -x /usr/local/bin/bowtie2
+    test -f /opt/gatk.jar
+    test -f /MELT/MELTv2.2.2/MELT.jar
