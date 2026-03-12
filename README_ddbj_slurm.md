@@ -1,10 +1,13 @@
 # DDBJ / SLURM quick start
 
-This repository was originally adapted for SGE. On the DDBJ supercomputer, use the SLURM backend in `cromwell-slurm.conf`.
+This manual describes the procedure for running GATK-SV-SS using 50 CRAM files on the DDBJ supercomputer. Use the SLURM backend in `cromwell-slurm.conf`.
 
 ## 1. Download runtime files
 
 ```bash
+git clone https://github.com/c2997108/gatk-sv-ss.git
+cd gatk-sv-ss
+
 export GATKSV_SS_ROOT="$PWD"
 
 wget -c -O gatk-sv-singularity.tar.gz 'https://zenodo.org/records/17994642/files/gatk-sv-singularity.tar.gz?download=1'
@@ -13,7 +16,17 @@ tar xf gatk-sv-singularity.tar.gz
 wget -c -O cromwell.jar https://github.com/c2997108/cromwell/releases/download/92ky/cromwell-92-97d07e0-SNAP.jar
 ```
 
-## 2. Prepare the 50-sample 1000 Genomes test batch
+## 2. enable MELT on DDBJ
+
+Download `MELTv2.2.2.tar.gz` from https://melt.igs.umaryland.edu/downloads.php. Place `MELTv2.2.2.tar.gz` at the repository top level or under `melt/`, then run the helper script:
+
+```bash
+./build-melt-image-ddbj.sh --melt-tar MELTv2.2.2.tar.gz
+```
+
+The script downloads GATK 4.2.6.1 if needed, builds a temporary sandbox from `docker://c2997108/gatk-sv:melt-pre`, adds MELT, and writes `images/local/melt:2.2.2`.
+
+## 3. Prepare the 50-sample 1000 Genomes test batch
 
 The sample list is fixed in `samples-ddbj-1000g-hg38-50.txt`.
 `prepare-ddbj-test-inputs.sh` creates:
@@ -25,19 +38,6 @@ The sample list is fixed in `samples-ddbj-1000g-hg38-50.txt`.
 ```bash
 ./prepare-ddbj-test-inputs.sh
 ```
-
-## 3. Optional: enable MELT on DDBJ without Docker
-
-Place `MELTv2.2.2.tar.gz` at the repository top level or under `melt/`, then run the helper script:
-
-```bash
-chmod +x ./build-melt-image-ddbj.sh
-./build-melt-image-ddbj.sh --melt-tar ../MELTv2.2.2.tar.gz
-
-./prepare-ddbj-test-inputs.sh
-```
-
-The script downloads GATK 4.2.6.1 if needed, builds a temporary sandbox from `docker://c2997108/gatk-sv:melt-pre`, adds MELT, and writes `images/local/melt:2.2.2`.
 
 ## 4. Run on SLURM
 
@@ -60,5 +60,4 @@ java -Xmx100G -Dconfig.file=cromwell-slurm.conf -jar cromwell.jar \
 
 ## Notes
 
-- `cromwell-slurm.conf` uses a local HSQLDB file under `cromwell-db/`, so Docker is not required for metadata storage on DDBJ.
 - `inputs.json` is generated with `GATKSVPipelineBatch.use_melt=true` when `images/local/melt:2.2.2` exists, otherwise `false`.
