@@ -39,6 +39,8 @@ The sample list is fixed in `samples-ddbj-1000g-hg38-50.txt`.
 ./prepare-ddbj-test-inputs.sh
 ```
 
+If you analyze your own CRAM files, please correctly specify the sex of each individual in the fifth column of `family.ped` (1 = male; 2 = female; other = unknown), list the sample IDs in `"GATKSVPipelineBatch.samples"`, provide the absolute paths to the CRAM files in `"GATKSVPipelineBatch.bam_or_cram_files"`, and provide the absolute paths to the corresponding CRAM index files in `"GATKSVPipelineBatch.bam_or_cram_indexes"`.
+
 ## 4. Run on SLURM
 
 Optional scheduler tuning:
