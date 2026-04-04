@@ -40,7 +40,7 @@ elif [[ "$#" -lt 7 ]]; then
   temp_args="$@" && echo "$0 ${temp_args}" && exit 1;
 fi
 
-JVM_MAX_MEM=${JVM_MAX_MEM:-12G}
+JVM_MAX_MEM=${JVM_MAX_MEM:-50G}
 # see http://melt.igs.umaryland.edu/manual.php, for option "-d"
 MIN_CHR_LENGTH=${MIN_CHR_LENGTH:-40000000}
 
