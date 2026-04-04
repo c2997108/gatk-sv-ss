@@ -451,7 +451,7 @@ task RunMELT {
   # Ensure there's sufficient memory. Estimate using extra metrics
   Float mem_per_pct_chimeras = 50.69
   Float mem_per_improper_pairs = "1.451e-8"
-  Float mem_offset = 6.833
+  Float mem_offset = 50
   Float mem_size_gb =
     mem_offset + mem_per_pct_chimeras * pct_chimeras + mem_per_improper_pairs * pf_reads_improper_pairs
   Float java_mem_fraction = 0.85
