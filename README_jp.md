@@ -31,7 +31,7 @@ wget -O gatk-sv-singularity.tar.gz https://zenodo.org/records/17994642/files/gat
 tar vxf gatk-sv-singularity.tar.gz 
 
 # singularityの実行用に修正したcromwellファイルをダウンロード。コンテナのイメージ名で起動しても再実行時にキャッシュが効くように、またWDLのwrite_linesを使った場合に作成されるファイルのタイムスタンプを固定することで再実行時にキャッシュが効くように修正している。
-wget -O cromwell.jar https://github.com/c2997108/cromwell/releases/download/92ky/cromwell-92-97d07e0-SNAP.jar
+wget -O cromwell.jar https://github.com/c2997108/cromwell/releases/download/92ky/cromwell-92-ee3e2b0-SNAP.jar
 ```
 
 ## MELTコンテナの作成
