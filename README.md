@@ -38,7 +38,7 @@ tar vxf gatk-sv-singularity.tar.gz
 # Download a modified Cromwell JAR for Singularity execution.
 # It is modified so that caching works across re-runs when using container image names,
 # and so that files created by WDL write_lines have fixed timestamps to enable caching.
-wget -O cromwell.jar https://github.com/c2997108/cromwell/releases/download/92ky/cromwell-92-97d07e0-SNAP.jar
+wget -O cromwell.jar https://github.com/c2997108/cromwell/releases/download/92ky/cromwell-92-ee3e2b0-SNAP.jar
 ```
 
 ## Building the MELT Container
