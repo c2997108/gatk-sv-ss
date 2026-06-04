@@ -189,7 +189,7 @@ task GetMultipleMetrics {
     disk_gb: vm_disk_size,
     boot_disk_gb: 10,
     preemptible_tries: 3,
-    max_retries: 1
+    max_retries: 3
   }
   RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
@@ -323,7 +323,7 @@ task GetWgsMetrics {
     disk_gb: vm_disk_size,
     boot_disk_gb: 10,
     preemptible_tries: 0,
-    max_retries: 1
+    max_retries: 3
   }
   RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
   runtime {
@@ -451,7 +451,7 @@ task RunMELT {
   # Ensure there's sufficient memory. Estimate using extra metrics
   Float mem_per_pct_chimeras = 50.69
   Float mem_per_improper_pairs = "1.451e-8"
-  Float mem_offset = 6.833
+  Float mem_offset = 50
   Float mem_size_gb =
     mem_offset + mem_per_pct_chimeras * pct_chimeras + mem_per_improper_pairs * pf_reads_improper_pairs
   Float java_mem_fraction = 0.85
@@ -479,7 +479,7 @@ task RunMELT {
     disk_gb: vm_disk_size,
     boot_disk_gb: 10,
     preemptible_tries: preemptible_tries,
-    max_retries: 1,
+    max_retries: 3,
   }
   RuntimeAttr runtime_attr = select_first([runtime_attr_override, default_attr])
 
@@ -526,6 +526,10 @@ task RunMELT {
       ~{reference_version}
 
     cat "~{melt_standard_vcf_header}" \
+        <(echo '##INFO=<ID=SR,Number=1,Type=Integer,Description="SR">') \
+        <(echo '##FORMAT=<ID=DP,Number=1,Type=Float,Description="DP">') \
+        <(echo '##FORMAT=<ID=AD,Number=1,Type=Float,Description="AD">') \
+        <(echo '##FILTER=<ID=lc,Description="lc">') \
         <(echo -e "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t~{sample_id}") \
         <(grep -v "^#" SVA.final_comp.vcf) \
         <(grep -v "^#" LINE1.final_comp.vcf) \
@@ -533,6 +537,8 @@ task RunMELT {
       | sed -e "2i##fileDate=$(date +'%Y%m%d')" -e "s/No Difference/No_Difference/" \
       | bcftools sort -Oz - > "~{sample_id}.melt.vcf.gz"
     bcftools index -t "~{sample_id}.melt.vcf.gz"
+
+    rm -f *.bam *.bai *.fq *.disc
 
     df -h
     ls -l

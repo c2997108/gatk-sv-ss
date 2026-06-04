@@ -413,6 +413,15 @@ task LocalizeReads {
     RuntimeAttr? runtime_attr_override
   }
 
+  parameter_meta {
+    reads_path: {
+      localization_optional: true
+    }
+    reads_index: {
+      localization_optional: true
+    }
+  }
+
   Float input_size = if move_files then size(reads_path, "GB") * 2 else size(reads_path, "GB")
   RuntimeAttr runtime_default = object {
                                   mem_gb: 3.75,
@@ -451,8 +460,8 @@ task LocalizeReads {
       mv ~{reads_path} $(basename ~{reads_path})
       mv ~{reads_index} $(basename ~{reads_index})
     else
-      cp ~{reads_path} $(basename ~{reads_path})
-      cp ~{reads_index} $(basename ~{reads_index})
+      ln ~{reads_path} $(basename ~{reads_path}) || ln -s "$(readlink -f ~{reads_path})" $(basename ~{reads_path}) || cp ~{reads_path} $(basename ~{reads_path})
+      ln ~{reads_index} $(basename ~{reads_index}) || ln -s "$(readlink -f ~{reads_index})" $(basename ~{reads_index}) || cp ~{reads_index} $(basename ~{reads_index})
     fi
   }
   output {
@@ -477,6 +486,9 @@ task CheckAligner {
 
   parameter_meta {
     reads_path: {
+                 localization_optional: true
+               }
+    reads_index: {
                  localization_optional: true
                }
   }

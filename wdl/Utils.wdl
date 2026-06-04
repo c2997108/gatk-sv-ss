@@ -488,6 +488,7 @@ task ValidatePedFile {
 
     set -euo pipefail
     python /opt/sv-pipeline/scripts/validate_ped.py -p ~{ped_file} -s ~{sample_list}
+    cp ~{ped_file} .
 
   >>>
 
@@ -584,7 +585,9 @@ task GetVcfSize {
         # symlink vcf_index to current working dir
         ln -s ~{vcf_index} .
 
-        export GCS_OAUTH_TOKEN=`gcloud auth application-default print-access-token`
+        if command -v gcloud >/dev/null 2>&1; then
+            export GCS_OAUTH_TOKEN="$(gcloud auth application-default print-access-token || true)"
+        fi
         bcftools query -l ~{vcf} | wc -w > ~{num_samples_file}
         # get num records from index.
         {

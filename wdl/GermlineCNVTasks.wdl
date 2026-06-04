@@ -40,6 +40,7 @@ task AnnotateIntervals {
         set -euo pipefail
         export GATK_LOCAL_JAR=~{default="/root/gatk.jar" gatk4_jar_override}
 
+        export HOME="$PWD"/home; mkdir -p "$HOME"
         gatk --java-options "-Xmx~{command_mem_mb}m" AnnotateIntervals \
             -L ~{intervals} \
             --reference ~{ref_fasta} \
@@ -107,10 +108,15 @@ task FilterIntervals {
         export GATK_LOCAL_JAR=~{default="/root/gatk.jar" gatk4_jar_override}
 
         read_count_files_list=~{write_lines(read_count_files)}
-        grep gz$ $read_count_files_list | xargs -l1 -P0 gunzip
+        while IFS= read -r read_count_file; do
+            if [[ "$read_count_file" == *.gz ]]; then
+                zcat "$read_count_file" > "${read_count_file%.gz}"
+            fi
+        done < "$read_count_files_list"
         sed 's/\.gz$//' $read_count_files_list | \
             awk '{print "--input "$0}' > read_count_files.args
 
+        export HOME="$PWD"/home; mkdir -p "$HOME"
         gatk --java-options "-Xmx~{command_mem_mb}m" FilterIntervals \
             -L ~{intervals} \
             ~{"-XL " + exclude_intervals} \
@@ -180,6 +186,7 @@ task ScatterIntervals {
 
         {
             >&2 echo "Attempting to run IntervalListTools..."
+            export HOME="$PWD"/home; mkdir -p "$HOME"
             gatk --java-options "-Xmx~{command_mem_mb}m" IntervalListTools \
                 --INPUT ~{interval_list} \
                 --SUBDIVISION_MODE INTERVAL_COUNT \
@@ -391,6 +398,11 @@ task BundledPostprocessGermlineCNVCalls {
 
         allosomal_contigs_args="--allosomal-contig ~{sep=" --allosomal-contig " allosomal_contigs}"
 
+        export HOME="$PWD"/home
+        export XDG_CACHE_HOME="$PWD"/.cache
+        export PYTENSOR_FLAGS="base_compiledir=$PWD/.pytensor"
+        export THEANO_FLAGS="base_compiledir=$PWD/.theano"
+        mkdir -p "$HOME" "$XDG_CACHE_HOME" "$PWD"/.pytensor "$PWD"/.theano
         time gatk --java-options "-Xmx~{command_mem_mb}m" PostprocessGermlineCNVCalls \
              --arguments_file calls_and_model_args.txt \
             ~{true="$allosomal_contigs_args" false="" allosomal_contigs_specified} \
@@ -498,6 +510,11 @@ task PostprocessGermlineCNVCalls {
 
         allosomal_contigs_args="--allosomal-contig ~{sep=" --allosomal-contig " allosomal_contigs}"
 
+        export HOME="$PWD"/home
+        export XDG_CACHE_HOME="$PWD"/.cache
+        export PYTENSOR_FLAGS="base_compiledir=$PWD/.pytensor"
+        export THEANO_FLAGS="base_compiledir=$PWD/.theano"
+        mkdir -p "$HOME" "$XDG_CACHE_HOME" "$PWD"/.pytensor "$PWD"/.theano
         time gatk --java-options "-Xmx~{command_mem_mb}m" PostprocessGermlineCNVCalls \
             --arguments_file calls_and_model_args.txt \
             ~{true="$allosomal_contigs_args" false="" allosomal_contigs_specified} \

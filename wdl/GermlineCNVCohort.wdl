@@ -361,9 +361,18 @@ task DetermineGermlineContigPloidyCohortMode {
         export GATK_LOCAL_JAR=~{default="/root/gatk.jar" gatk4_jar_override}
         export MKL_NUM_THREADS=~{cpu}
         export OMP_NUM_THREADS=~{cpu}
+        export HOME="$PWD"/home
+        export XDG_CACHE_HOME="$PWD"/.cache
+        export PYTENSOR_FLAGS="base_compiledir=$PWD/.pytensor"
+        export THEANO_FLAGS="base_compiledir=$PWD/.theano"
+        mkdir -p "$HOME" "$XDG_CACHE_HOME" "$PWD"/.pytensor "$PWD"/.theano
 
         read_count_files_list=~{write_lines(read_count_files)}
-        grep gz$ $read_count_files_list | xargs -l1 -P0 gunzip
+        while IFS= read -r read_count_file; do
+            if [[ "$read_count_file" == *.gz ]]; then
+                zcat "$read_count_file" > "${read_count_file%.gz}"
+            fi
+        done < "$read_count_files_list"
         sed 's/\.gz$//' $read_count_files_list | \
             awk '{print "--input "$0}' > read_count_files.args
 
@@ -482,13 +491,22 @@ task GermlineCNVCallerCohortMode {
         export GATK_LOCAL_JAR=~{default="/root/gatk.jar" gatk4_jar_override}
         export MKL_NUM_THREADS=~{cpu}
         export OMP_NUM_THREADS=~{cpu}
+        export HOME="$PWD"/home
+        export XDG_CACHE_HOME="$PWD"/.cache
+        export PYTENSOR_FLAGS="base_compiledir=$PWD/.pytensor"
+        export THEANO_FLAGS="base_compiledir=$PWD/.theano"
+        mkdir -p "$HOME" "$XDG_CACHE_HOME" "$PWD"/.pytensor "$PWD"/.theano
 
         mkdir contig-ploidy-calls-dir
         tar xzf ~{contig_ploidy_calls_tar} -C contig-ploidy-calls-dir
 
         # prepare read-count files and compose gatk argument file
         read_count_files_list=~{write_lines(read_count_files)}
-        grep gz$ $read_count_files_list | xargs -l1 -P0 gunzip
+        while IFS= read -r read_count_file; do
+            if [[ "$read_count_file" == *.gz ]]; then
+                zcat "$read_count_file" > "${read_count_file%.gz}"
+            fi
+        done < "$read_count_files_list"
         sed 's/\.gz$//' $read_count_files_list | \
             awk '{print "--input "$0}' > read_count_files.args
 

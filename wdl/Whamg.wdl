@@ -250,8 +250,11 @@ task RunWhamgOnCram {
     df -h
     echo "whamg $(whamg 2>&1 | grep Version)"
 
-    # necessary for getting permission to read from google bucket directly
-    export GCS_OAUTH_TOKEN=`gcloud auth application-default print-access-token`
+    # Only needed when reading directly from GCS. Local SGE runs use localized
+    # files and should not fail if gcloud is absent or unauthenticated.
+    if command -v gcloud >/dev/null 2>&1; then
+      export GCS_OAUTH_TOKEN="$(gcloud auth application-default print-access-token || true)"
+    fi
 
     # covert cram to bam
     samtools view -b1@ ~{cpu_cores} -T "~{reference_fasta}" "~{cram_file}" > sample.bam
@@ -292,6 +295,8 @@ task RunWhamgOnCram {
     cd ..
     bcftools index -t "~{sample_id}.wham.vcf.gz"
 
+    rm -f sample.bam sample.bam.bai
+
     df -h
     ls -l
   >>>
@@ -305,4 +310,3 @@ task RunWhamgOnCram {
     maxRetries: select_first([runtime_attr.max_retries, default_attr.max_retries])
   }
 }
-

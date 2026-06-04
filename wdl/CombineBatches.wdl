@@ -372,6 +372,8 @@ task GroupedSVClusterTask {
     JVM_MAX_MEM=$(getJavaMem MemTotal)
     echo "JVM memory: $JVM_MAX_MEM"
 
+    tabix -f ~{vcf}
+
     gatk --java-options "-Xmx${JVM_MAX_MEM}" GroupedSVCluster \
       ~{"-L " + contig} \
       --reference ~{reference_fasta} \

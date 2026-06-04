@@ -258,8 +258,9 @@ task ZPaste {
     FILE_NUM=0
     while read -r COLUMN_FILE; do
       FIFO=$(printf "column_file_fifos/%08d" $FILE_NUM)
-      mkfifo "$FIFO"
-      bgzip -@$(nproc) -cd "$COLUMN_FILE" > "$FIFO" &
+      # On shared filesystems used by SGE, the FIFO fan-out can hang when
+      # producer jobs outpace paste. Materialize the decompressed columns.
+      bgzip -@$(nproc) -cd "$COLUMN_FILE" > "$FIFO"
       ((++FILE_NUM))
     done < ~{write_lines(column_files)}
 
