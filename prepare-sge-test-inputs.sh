@@ -113,16 +113,10 @@ else
   gcnv_model_tars_json="[]"
 fi
 
-if [[ -e "${image_dir}/local/melt:2.2.2" ]]; then
-  default_use_melt="true"
-else
-  default_use_melt="false"
-fi
-
 use_manta="${GATKSV_USE_MANTA:-true}"
 use_wham="${GATKSV_USE_WHAM:-true}"
-use_melt="${GATKSV_USE_MELT:-${default_use_melt}}"
-use_scramble="${GATKSV_USE_SCRAMBLE:-false}"
+use_melt="${GATKSV_USE_MELT:-false}"
+use_scramble="${GATKSV_USE_SCRAMBLE:-true}"
 melt_docker="${GATKSV_MELT_DOCKER:-local/melt:2.2.2}"
 
 jq \

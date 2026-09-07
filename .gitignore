@@ -15,3 +15,19 @@ src/svtk/svtk/utils/utils.pyc
 src/svtk/svtk/vcfcluster.pyc
 /inputs/build/
 /inputs/values/google_cloud.*.json
+
+# Local SGE/Cromwell execution artifacts
+/cromwell-executions/
+/cromwell-outputs/
+/cromwell-outputs.old/
+/cromwell-workflow-logs/
+/sge-cramdir-joint/
+/sge-test/
+/sge-test-cram2/
+/sge-test-joint/
+/result/
+
+# Local resource/image mirrors and generated depth tables
+/gs
+/images
+/chrY_*.mean_depth.tsv

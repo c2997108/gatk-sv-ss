@@ -102,6 +102,21 @@ if [[ -n "${GATKSV_SGE_EXTRA_BINDS:-}" ]]; then
   done
 fi
 
+qsub_resource_args=()
+if [[ -n "${GATKSV_SGE_HOST_EXCLUDES:-}" ]]; then
+  host_expr=""
+  IFS=',' read -r -a excluded_hosts <<<"${GATKSV_SGE_HOST_EXCLUDES}"
+  for host in "${excluded_hosts[@]}"; do
+    host="${host//[[:space:]]/}"
+    [[ -z "${host}" ]] && continue
+    [[ -n "${host_expr}" ]] && host_expr+="&"
+    host_expr+="!${host}"
+  done
+  if [[ -n "${host_expr}" ]]; then
+    qsub_resource_args+=(-l "h=${host_expr}")
+  fi
+fi
+
 while true; do
   if job_id="$(
     qsub \
@@ -114,6 +129,7 @@ while true; do
       -e "${err}" \
       -pe smp "${cpu}" \
       -l mem_req="${mem_per_core}" \
+      "${qsub_resource_args[@]}" \
       -v JAVA_TOOL_OPTIONS="${java_tool_options}" \
       "${runner}" exec --no-home "${bind_args[@]}" --pwd "${cwd}" "${image}" bash "${script}"
   )"; then
